@@ -1,0 +1,55 @@
+# robots.txt — SEO & AI Search Engine Optimized
+# srikanth.nandiraju.com
+
+# ─── Standard crawlers ──────────────────────────────────
+User-agent: *
+Allow: /
+Disallow: /private/
+
+# ─── Google (Search + Gemini) ───────────────────────────
+User-agent: Googlebot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# ─── Bing / Copilot ─────────────────────────────────────
+User-agent: Bingbot
+Allow: /
+
+# ─── ChatGPT / OpenAI ───────────────────────────────────
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# ─── Anthropic Claude ───────────────────────────────────
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+# ─── Perplexity AI ──────────────────────────────────────
+User-agent: PerplexityBot
+Allow: /
+
+# ─── Apple / Siri ───────────────────────────────────────
+User-agent: Applebot
+Allow: /
+
+# ─── Meta AI ────────────────────────────────────────────
+User-agent: FacebookBot
+Allow: /
+
+# ─── Cohere ─────────────────────────────────────────────
+User-agent: cohere-ai
+Allow: /
+
+# ─── Common AI research crawlers ────────────────────────
+User-agent: CCBot
+Allow: /
+
+# ─── Sitemap location ───────────────────────────────────
+Sitemap: https://srikanth.nandiraju.com/sitemap.xml

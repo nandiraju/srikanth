@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://srikanth.nandiraju.com/</loc>
+    <lastmod>2026-06-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://srikanth.nandiraju.com/og-image.jpg</image:loc>
+      <image:title>Srikanth Nandiraju — AI &amp; ML Technology Leader</image:title>
+      <image:caption>Silicon Valley AI and ML technology leader Srikanth Nandiraju, CTO and innovator with 30+ years of experience.</image:caption>
+    </image:image>
+  </url>
+</urlset>
