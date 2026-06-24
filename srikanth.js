@@ -77,19 +77,97 @@ function initGSAP() {
 
   // Individual steps animations
   const steps = document.querySelectorAll(".content-card");
+  const mm = gsap.matchMedia();
+
   steps.forEach((step, i) => {
-    gsap.to(step, {
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      scrollTrigger: {
-        trigger: document.querySelectorAll(".step")[i],
-        start: "top 60%",
-        end: "top 20%",
-        scrub: 1,
-        toggleActions: "play reverse play reverse"
-      }
-    });
+    const isLast = (i === steps.length - 1);
+
+    if (isLast) {
+      // For the last card:
+      // On desktop (min-width: 769px), standard fade in
+      mm.add("(min-width: 769px)", () => {
+        gsap.to(step, {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          scrollTrigger: {
+            trigger: document.querySelectorAll(".step")[i],
+            start: "top 60%",
+            end: "top 20%",
+            scrub: 1,
+            toggleActions: "play reverse play reverse"
+          }
+        });
+      });
+
+      // On mobile (max-width: 768px), fade in, and then fade out 2 seconds after scrolling to the bottom
+      mm.add("(max-width: 768px)", () => {
+        // 1. Standard fade-in scrub
+        gsap.to(step, {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          scrollTrigger: {
+            trigger: document.querySelectorAll(".step")[i],
+            start: "top 60%",
+            end: "top 20%",
+            scrub: 1,
+            toggleActions: "play reverse play reverse"
+          }
+        });
+
+        // 2. Fade out 2 seconds after reaching the absolute bottom
+        let fadeOutTimeout = null;
+        let isFadedOut = false;
+
+        ScrollTrigger.create({
+          trigger: "body",
+          start: "top top",
+          end: "bottom bottom",
+          onUpdate: (self) => {
+            if (self.progress >= 0.99) {
+              if (!fadeOutTimeout && !isFadedOut) {
+                fadeOutTimeout = setTimeout(() => {
+                  gsap.to(step, {
+                    opacity: 0,
+                    duration: 0.8,
+                    overwrite: "auto"
+                  });
+                  isFadedOut = true;
+                }, 2000);
+              }
+            } else {
+              if (fadeOutTimeout) {
+                clearTimeout(fadeOutTimeout);
+                fadeOutTimeout = null;
+              }
+              if (isFadedOut) {
+                gsap.to(step, {
+                  opacity: 1,
+                  duration: 0.5,
+                  overwrite: "auto"
+                });
+                isFadedOut = false;
+              }
+            }
+          }
+        });
+      });
+    } else {
+      // For all other cards, standard animation on all screen sizes
+      gsap.to(step, {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        scrollTrigger: {
+          trigger: document.querySelectorAll(".step")[i],
+          start: "top 60%",
+          end: "top 20%",
+          scrub: 1,
+          toggleActions: "play reverse play reverse"
+        }
+      });
+    }
   });
 
   // Draw the first frame
