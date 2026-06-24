@@ -190,7 +190,8 @@ footer {
   width: 100%;
 }
 
-.skeuo-btn {
+.skeuo-btn,
+.skeuo-btn:visited {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -233,7 +234,10 @@ footer {
   pointer-events: none;
 }
 
-.skeuo-btn:hover {
+.skeuo-btn:hover,
+.skeuo-btn:visited:hover {
+  color: #ffffff;
+  text-decoration: none;
   background: linear-gradient(to bottom, #2d303b 0%, #1d1f24 100%);
   box-shadow: 
     0 10px 20px rgba(0, 0, 0, 0.6),
@@ -243,7 +247,9 @@ footer {
   transform: translateY(-1px);
 }
 
-.skeuo-btn:active {
+.skeuo-btn:active,
+.skeuo-btn:visited:active {
+  color: #ffffff;
   transform: translateY(1px);
   background: linear-gradient(to bottom, #131418 0%, #1d1f24 100%);
   box-shadow: 
@@ -262,13 +268,15 @@ footer p {
   color: #ffffff;
 }
 
-footer a {
+footer a:not(.skeuo-btn),
+footer a:not(.skeuo-btn):visited {
   color: #ffffff;
   text-decoration: underline;
   transition: color 0.2s ease;
 }
 
-footer a:hover {
+footer a:not(.skeuo-btn):hover,
+footer a:not(.skeuo-btn):visited:hover {
   color: var(--accent-color);
 }
 
