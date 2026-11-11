@@ -1,73 +1,233 @@
 const canvas = document.getElementById("parallax-canvas");
-const context = canvas.getContext("2d");
+const context = canvas.getContext("2d", { alpha: false });
 const progressBar = document.getElementById("progress-bar");
 const loader = document.getElementById("loader");
 const mainContent = document.getElementById("main-content");
 
-const frameCount = 192;
-const currentFrame = index => (
-  `asset/nsri_frames/frame_${index.toString().padStart(4, '0')}.webp`
-);
+const FRAME_COUNT = 192;
+const BG_HEX = "#050505";
+const MAX_BACKGROUND_CONCURRENCY = 6;
+const LOADER_FAILSAFE_MS = 4500;
 
-const images = [];
-const airbnb = {
-  frame: 0
-};
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const isMobileSource = window.matchMedia("(max-width: 768px)").matches;
+const frameDir = isMobileSource ? "asset/nsri_frames_mobile" : "asset/nsri_frames";
 
-// Preload images
-let imagesLoaded = 0;
+const frameUrl = (oneBasedIndex) =>
+  `${frameDir}/frame_${String(oneBasedIndex).padStart(4, "0")}.webp`;
 
-function preloadImages() {
-  for (let i = 1; i <= frameCount; i++) {
+const images = new Array(FRAME_COUNT);
+const loadedFlags = new Uint8Array(FRAME_COUNT);
+const state = { frame: 0 };
+
+let isUnlocked = false;
+let renderQueued = false;
+let lastViewportWidth = 0;
+let lastViewportHeight = 0;
+let resizeRafId = 0;
+
+// Build critical Phase-1 frame indices (0-based):
+// First 10 frames for instant top-of-page scroll + every 12th keyframe across the timeline (26 frames total)
+function buildCriticalIndices() {
+  const set = new Set();
+  for (let i = 0; i < 10 && i < FRAME_COUNT; i++) {
+    set.add(i);
+  }
+  for (let frameNum = 12; frameNum <= FRAME_COUNT; frameNum += 12) {
+    set.add(frameNum - 1);
+  }
+  set.add(FRAME_COUNT - 1);
+  return Array.from(set).sort((a, b) => a - b);
+}
+
+function updateProgressUI(completed, total) {
+  const pct = Math.min(100, Math.round((completed / total) * 100));
+  progressBar.style.width = `${pct}%`;
+  progressBar.setAttribute("aria-valuenow", String(pct));
+}
+
+function loadSingleFrame(zeroBasedIndex) {
+  return new Promise((resolve) => {
+    if (loadedFlags[zeroBasedIndex] && images[zeroBasedIndex]) {
+      resolve(images[zeroBasedIndex]);
+      return;
+    }
+
     const img = new Image();
-    img.src = currentFrame(i);
-    img.onload = () => {
-      imagesLoaded++;
-      const progress = (imagesLoaded / frameCount) * 100;
-      progressBar.style.width = `${progress}%`;
+    img.decoding = "async";
+    images[zeroBasedIndex] = img;
 
-      if (imagesLoaded === frameCount) {
-        initGSAP();
-      }
+    img.onload = () => {
+      loadedFlags[zeroBasedIndex] = 1;
+      resolve(img);
     };
     img.onerror = () => {
-      console.error(`Failed to load frame: ${img.src}`);
-      imagesLoaded++; // Still count as loaded to avoid blocking loader
-      if (imagesLoaded === frameCount) {
-        initGSAP();
-      }
+      console.warn(`Failed to load frame: ${img.src}`);
+      resolve(null);
     };
-    images.push(img);
+
+    img.src = frameUrl(zeroBasedIndex + 1);
+  });
+}
+
+function getBestLoadedImage(targetIndex) {
+  const clamped = Math.max(0, Math.min(FRAME_COUNT - 1, Math.round(targetIndex)));
+  if (loadedFlags[clamped]) {
+    return images[clamped];
+  }
+  for (let offset = 1; offset < FRAME_COUNT; offset++) {
+    const prev = clamped - offset;
+    if (prev >= 0 && loadedFlags[prev]) {
+      return images[prev];
+    }
+    const next = clamped + offset;
+    if (next < FRAME_COUNT && loadedFlags[next]) {
+      return images[next];
+    }
+  }
+  return null;
+}
+
+function updateCanvasDimensions(force = false) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  // Ignore small mobile URL-bar vertical shifts while scrolling
+  if (
+    !force &&
+    vw <= 768 &&
+    vw === lastViewportWidth &&
+    Math.abs(vh - lastViewportHeight) < 130
+  ) {
+    return false;
+  }
+
+  lastViewportWidth = vw;
+  lastViewportHeight = vh;
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.max(1, Math.round(vw * dpr));
+  canvas.height = Math.max(1, Math.round(vh * dpr));
+  return true;
+}
+
+function scheduleRender() {
+  if (renderQueued) return;
+  renderQueued = true;
+  requestAnimationFrame(() => {
+    renderQueued = false;
+    render();
+  });
+}
+
+function render() {
+  const img = getBestLoadedImage(state.frame);
+  if (!img || !img.naturalWidth) return;
+
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const canvasRatio = cw / ch;
+  const imgRatio = img.naturalWidth / img.naturalHeight;
+
+  context.fillStyle = BG_HEX;
+  context.fillRect(0, 0, cw, ch);
+
+  if (canvasRatio < 0.85) {
+    // Portrait mobile framing: keep Srikanth + campus signs visible in upper 65%
+    // and smoothly vignette into #050505 behind the bottom glass card
+    const drawHeight = Math.round(ch * 0.65);
+    const drawWidth = Math.round(drawHeight * imgRatio);
+    const offsetX = Math.round((cw - drawWidth) / 2);
+    const offsetY = 0;
+
+    context.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+
+    const fadeHeight = Math.round(drawHeight * 0.26);
+    const fadeStart = drawHeight - fadeHeight;
+    const grad = context.createLinearGradient(0, fadeStart, 0, drawHeight + 2);
+    grad.addColorStop(0, "rgba(5, 5, 5, 0)");
+    grad.addColorStop(1, BG_HEX);
+    context.fillStyle = grad;
+    context.fillRect(0, fadeStart, cw, fadeHeight + 4);
+  } else {
+    let drawWidth, drawHeight, offsetX, offsetY;
+    if (canvasRatio > imgRatio) {
+      drawWidth = cw;
+      drawHeight = cw / imgRatio;
+      offsetX = 0;
+      offsetY = (ch - drawHeight) / 2;
+    } else {
+      drawWidth = ch * imgRatio;
+      drawHeight = ch;
+      offsetX = (cw - drawWidth) / 2;
+      offsetY = 0;
+    }
+    context.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
   }
 }
 
-function initGSAP() {
-  // Hide loader
+function hideLoaderAndReveal() {
+  updateProgressUI(1, 1);
   loader.style.opacity = "0";
+  loader.style.pointerEvents = "none";
+  mainContent.style.opacity = "1";
   setTimeout(() => {
     loader.style.display = "none";
-    mainContent.style.opacity = "1";
-  }, 800);
+  }, 650);
+}
+
+function initAnimations() {
+  updateCanvasDimensions(true);
+  render();
+
+  window.addEventListener(
+    "resize",
+    () => {
+      if (resizeRafId) cancelAnimationFrame(resizeRafId);
+      resizeRafId = requestAnimationFrame(() => {
+        if (updateCanvasDimensions(false)) {
+          render();
+        }
+      });
+    },
+    { passive: true }
+  );
+
+  const cards = document.querySelectorAll(".content-card");
+  const stepContainers = document.querySelectorAll(".step");
+
+  // Reduced motion or missing CDN fallback: reveal cards cleanly without scroll-jacking
+  if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
+    cards.forEach((card) => {
+      card.style.opacity = "1";
+      card.style.transform = "none";
+    });
+
+    if (!prefersReducedMotion) {
+      const scrollEl = document.querySelector(".scroll-container");
+      window.addEventListener(
+        "scroll",
+        () => {
+          const maxScroll = Math.max(1, scrollEl.offsetHeight - window.innerHeight);
+          const progress = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+          state.frame = Math.round(progress * (FRAME_COUNT - 1));
+          scheduleRender();
+        },
+        { passive: true }
+      );
+    }
+    return;
+  }
 
   gsap.registerPlugin(ScrollTrigger);
 
-  // Initial canvas setup
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-
-  window.addEventListener("resize", () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    render();
-  });
-
-  // Main scroll timeline for frames
-  gsap.to(airbnb, {
-    frame: frameCount - 1,
+  // Main scroll timeline for canvas frames
+  gsap.to(state, {
+    frame: FRAME_COUNT - 1,
     snap: "frame",
     ease: "none",
     scrollTrigger: {
-      scrub: 0.5,
+      scrub: 0.4,
       trigger: ".scroll-container",
       start: "top top",
       end: "bottom bottom"
@@ -75,129 +235,108 @@ function initGSAP() {
     onUpdate: render
   });
 
-  // Individual steps animations
-  const steps = document.querySelectorAll(".content-card");
-  const mm = gsap.matchMedia();
-
-  steps.forEach((step, i) => {
-    const isLast = (i === steps.length - 1);
-
-    if (isLast) {
-      // For the last card:
-      // On desktop (min-width: 769px), standard fade in
-      mm.add("(min-width: 769px)", () => {
-        gsap.to(step, {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          scrollTrigger: {
-            trigger: document.querySelectorAll(".step")[i],
-            start: "top 60%",
-            end: "top 20%",
-            scrub: 1,
-            toggleActions: "play reverse play reverse"
-          }
-        });
-      });
-
-      // On mobile (max-width: 768px), fade in, and then fade out 2 seconds after scrolling to the bottom
-      mm.add("(max-width: 768px)", () => {
-        // 1. Standard fade-in scrub
-        gsap.to(step, {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          scrollTrigger: {
-            trigger: document.querySelectorAll(".step")[i],
-            start: "top 60%",
-            end: "top 20%",
-            scrub: 1,
-            toggleActions: "play reverse play reverse"
-          }
-        });
-
-        // 2. Fade out 2 seconds after reaching the absolute bottom
-        let fadeOutTimeout = null;
-        let isFadedOut = false;
-
-        ScrollTrigger.create({
-          trigger: "body",
-          start: "top top",
-          end: "bottom bottom",
-          onUpdate: (self) => {
-            if (self.progress >= 0.99) {
-              if (!fadeOutTimeout && !isFadedOut) {
-                fadeOutTimeout = setTimeout(() => {
-                  gsap.to(step, {
-                    opacity: 0,
-                    duration: 0.8,
-                    overwrite: "auto"
-                  });
-                  isFadedOut = true;
-                }, 2000);
-              }
-            } else {
-              if (fadeOutTimeout) {
-                clearTimeout(fadeOutTimeout);
-                fadeOutTimeout = null;
-              }
-              if (isFadedOut) {
-                gsap.to(step, {
-                  opacity: 1,
-                  duration: 0.5,
-                  overwrite: "auto"
-                });
-                isFadedOut = false;
-              }
-            }
-          }
-        });
-      });
+  // Entrance + scroll-linked animations for each step card
+  cards.forEach((card, i) => {
+    if (i === 0) {
+      // First card sits in the initial viewport: smooth entrance on unlock
+      gsap.fromTo(
+        card,
+        { opacity: 0, y: 24 },
+        { opacity: 1, y: 0, duration: 0.85, ease: "power2.out", delay: 0.15 }
+      );
     } else {
-      // For all other cards, standard animation on all screen sizes
-      gsap.to(step, {
-        opacity: 1,
-        y: 0,
-        duration: 1,
-        scrollTrigger: {
-          trigger: document.querySelectorAll(".step")[i],
-          start: "top 60%",
-          end: "top 20%",
-          scrub: 1,
-          toggleActions: "play reverse play reverse"
+      gsap.fromTo(
+        card,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: stepContainers[i],
+            start: "top 75%",
+            end: "top 30%",
+            scrub: 0.8
+          }
         }
-      });
+      );
     }
   });
-
-  // Draw the first frame
-  render();
 }
 
-function render() {
-  const img = images[airbnb.frame];
-  if (!img || !img.complete) return;
-
-  const canvasRatio = canvas.width / canvas.height;
-  const imgRatio = img.width / img.height;
-
-  let drawWidth, drawHeight, offsetX, offsetY;
-
-  if (canvasRatio > imgRatio) {
-    drawWidth = canvas.width;
-    drawHeight = canvas.width / imgRatio;
-    offsetX = 0;
-    offsetY = (canvas.height - drawHeight) / 2;
-  } else {
-    drawWidth = canvas.height * imgRatio;
-    drawHeight = canvas.height;
-    offsetX = (canvas.width - drawWidth) / 2;
-    offsetY = 0;
+function streamRemainingFrames(criticalSet) {
+  const queue = [];
+  for (let i = 0; i < FRAME_COUNT; i++) {
+    if (!criticalSet.has(i)) {
+      queue.push(i);
+    }
   }
 
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+  let cursor = 0;
+  function nextWorker() {
+    if (cursor >= queue.length) return;
+    const frameIndex = queue[cursor++];
+    loadSingleFrame(frameIndex).then(() => {
+      if (Math.abs(frameIndex - state.frame) <= 12) {
+        scheduleRender();
+      }
+      nextWorker();
+    });
+  }
+
+  const workers = Math.min(MAX_BACKGROUND_CONCURRENCY, queue.length);
+  for (let w = 0; w < workers; w++) {
+    nextWorker();
+  }
 }
 
-// Start
-preloadImages();
+async function boot() {
+  // Fast path for users who prefer reduced motion: load 1 single hero frame
+  if (prefersReducedMotion) {
+    state.frame = FRAME_COUNT - 1;
+    await loadSingleFrame(FRAME_COUNT - 1);
+    isUnlocked = true;
+    initAnimations();
+    hideLoaderAndReveal();
+    return;
+  }
+
+  const criticalIndices = buildCriticalIndices();
+  const criticalSet = new Set(criticalIndices);
+  let completedCritical = 0;
+
+  const unlockOnce = () => {
+    if (isUnlocked) return;
+    isUnlocked = true;
+    clearTimeout(failsafeTimer);
+    initAnimations();
+    hideLoaderAndReveal();
+    streamRemainingFrames(criticalSet);
+  };
+
+  // Failsafe timer so a stalled frame request never traps the user on #loader
+  const failsafeTimer = setTimeout(() => {
+    unlockOnce();
+  }, LOADER_FAILSAFE_MS);
+
+  // Ensure Frame 1 starts immediately with top priority
+  await loadSingleFrame(0);
+  completedCritical++;
+  updateProgressUI(completedCritical, criticalIndices.length);
+
+  const remainingCritical = criticalIndices.filter((idx) => idx !== 0);
+  await Promise.all(
+    remainingCritical.map((idx) =>
+      loadSingleFrame(idx).then(() => {
+        completedCritical++;
+        if (!isUnlocked) {
+          updateProgressUI(completedCritical, criticalIndices.length);
+        }
+      })
+    )
+  );
+
+  unlockOnce();
+}
+
+boot();
