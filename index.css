@@ -204,6 +204,63 @@ footer {
   max-width: 760px;
 }
 
+.skeuo-btn-wrapper {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.btn-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  width: max-content;
+  max-width: min(90vw, 380px);
+  padding: 0.55rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(18, 20, 26, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 210, 255, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 210, 255, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+}
+
+.btn-tooltip strong {
+  color: var(--accent-color);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.btn-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: rgba(0, 210, 255, 0.35) transparent transparent transparent;
+}
+
+.skeuo-btn-wrapper:hover .btn-tooltip,
+.skeuo-btn-wrapper:focus-within .btn-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
 .skeuo-btn,
 .skeuo-btn:visited {
   display: inline-flex;
@@ -315,7 +372,8 @@ footer a:not(.skeuo-btn):visited:hover {
   #loader,
   #main-content,
   #progress-bar,
-  .skeuo-btn {
+  .skeuo-btn,
+  .btn-tooltip {
     transition: none !important;
   }
 
