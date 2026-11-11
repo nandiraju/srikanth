@@ -236,7 +236,11 @@ function initAnimations() {
   });
 
   // Entrance + scroll-linked animations for each step card
+  const mm = gsap.matchMedia();
+
   cards.forEach((card, i) => {
+    const isLast = (i === cards.length - 1);
+
     if (i === 0) {
       // First card sits in the initial viewport: smooth entrance on unlock
       gsap.fromTo(
@@ -244,7 +248,7 @@ function initAnimations() {
         { opacity: 0, y: 24 },
         { opacity: 1, y: 0, duration: 0.85, ease: "power2.out", delay: 0.15 }
       );
-    } else {
+    } else if (!isLast) {
       gsap.fromTo(
         card,
         { opacity: 0, y: 30 },
@@ -260,6 +264,134 @@ function initAnimations() {
           }
         }
       );
+    } else {
+      // Last card (#step-5 "Vibe Code or Die")
+      // Desktop (min-width: 769px): standard scroll-linked animation
+      mm.add("(min-width: 769px)", () => {
+        gsap.fromTo(
+          card,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: stepContainers[i],
+              start: "top 75%",
+              end: "top 30%",
+              scrub: 0.8
+            }
+          }
+        );
+      });
+
+      // Mobile (max-width: 768px):
+      // Fade in on scroll, hide when scrolled all the way to the bottom to unblock face,
+      // and show it back again whenever the user interacts/taps.
+      mm.add("(max-width: 768px)", () => {
+        gsap.fromTo(
+          card,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: stepContainers[i],
+              start: "top 75%",
+              end: "top 30%",
+              scrub: 0.8
+            }
+          }
+        );
+
+        let fadeOutTimeout = null;
+        let isFadedOut = false;
+        let isAtBottom = false;
+
+        const hideCard = () => {
+          if (isFadedOut) return;
+          gsap.to(card, {
+            opacity: 0,
+            duration: 0.7,
+            overwrite: "auto",
+            onComplete: () => {
+              if (isFadedOut) card.style.pointerEvents = "none";
+            }
+          });
+          isFadedOut = true;
+        };
+
+        const showCard = () => {
+          if (!isFadedOut) return;
+          card.style.pointerEvents = "auto";
+          gsap.to(card, {
+            opacity: 1,
+            duration: 0.4,
+            overwrite: "auto"
+          });
+          isFadedOut = false;
+        };
+
+        const scheduleFadeOut = (delay = 1800) => {
+          if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
+          fadeOutTimeout = setTimeout(() => {
+            if (isAtBottom) {
+              hideCard();
+            }
+          }, delay);
+        };
+
+        const handleInteraction = () => {
+          if (isFadedOut) {
+            showCard();
+            if (isAtBottom) {
+              scheduleFadeOut(3000);
+            }
+          } else if (isAtBottom) {
+            scheduleFadeOut(3000);
+          }
+        };
+
+        window.addEventListener("touchstart", handleInteraction, { passive: true });
+        window.addEventListener("pointerdown", handleInteraction, { passive: true });
+        window.addEventListener("click", handleInteraction, { passive: true });
+
+        const bottomTrigger = ScrollTrigger.create({
+          trigger: "body",
+          start: "top top",
+          end: "bottom bottom",
+          onUpdate: (self) => {
+            const nearBottom =
+              self.progress >= 0.98 ||
+              window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 60;
+
+            if (nearBottom) {
+              isAtBottom = true;
+              if (!fadeOutTimeout && !isFadedOut) {
+                scheduleFadeOut(1800);
+              }
+            } else {
+              isAtBottom = false;
+              if (fadeOutTimeout) {
+                clearTimeout(fadeOutTimeout);
+                fadeOutTimeout = null;
+              }
+              if (isFadedOut) {
+                showCard();
+              }
+            }
+          }
+        });
+
+        return () => {
+          if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
+          window.removeEventListener("touchstart", handleInteraction);
+          window.removeEventListener("pointerdown", handleInteraction);
+          window.removeEventListener("click", handleInteraction);
+          bottomTrigger.kill();
+        };
+      });
     }
   });
 }
