@@ -3,8 +3,8 @@
   --text-color: #ffffff;
   --accent-color: #00d2ff;
   --secondary-accent: #3a7bd5;
-  --glass-bg: rgba(12, 14, 18, 0.55);
-  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
   --font-heading: "Outfit", sans-serif;
   --font-body: "Inter", sans-serif;
 }
@@ -268,100 +268,14 @@ footer {
     0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
-/* Accessible Collapsible About & FAQ Drawer */
-.profile-drawer {
-  width: 100%;
-  max-width: 680px;
-  padding: 0;
-  border-radius: 20px;
-  overflow: hidden;
-}
-
-.profile-drawer > summary {
-  list-style: none;
-  cursor: pointer;
-  padding: 0.75rem 1.5rem;
-  text-align: center;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.85);
-  user-select: none;
-  transition: color 0.2s ease;
-}
-
-.profile-drawer > summary::-webkit-details-marker {
-  display: none;
-}
-
-.profile-drawer > summary::after {
-  content: " +";
-  color: var(--accent-color);
-}
-
-.profile-drawer[open] > summary::after {
-  content: " −";
-}
-
-.profile-drawer > summary:hover {
-  color: var(--accent-color);
-}
-
-.drawer-body {
-  padding: 1.25rem 2rem 2rem;
-  border-top: 1px solid var(--glass-border);
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  text-align: left;
-}
-
-.drawer-body h2 {
-  font-size: 1.15rem;
-  color: var(--accent-color);
-  margin-bottom: 0.6rem;
-}
-
-.drawer-body p,
-.drawer-body li,
-.drawer-body dd {
-  font-size: 0.92rem;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.drawer-body p + p {
-  margin-top: 0.65rem;
-}
-
-.drawer-body ul {
-  padding-left: 1.25rem;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.faq-list {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.faq-list dt {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #ffffff;
-  margin-top: 0.5rem;
-}
-
 footer .footer-content {
   padding: 1rem 2rem;
   border-radius: 50px;
 }
 
-footer .footer-content p {
+footer p {
   font-size: 0.8rem;
   color: #ffffff;
-  text-align: center;
 }
 
 footer a:not(.skeuo-btn),
@@ -385,23 +299,14 @@ footer a:not(.skeuo-btn):visited:hover {
   }
 
   .glass {
-    padding: 1.6rem 1.75rem;
-    background: rgba(10, 12, 16, 0.76);
+    padding: 2rem;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
 
   h1.content-title,
   h2 {
-    font-size: 1.65rem;
-  }
-
-  p {
-    font-size: 0.98rem;
-  }
-
-  .drawer-body {
-    padding: 1rem 1.25rem 1.5rem;
+    font-size: 1.8rem;
   }
 }
 
