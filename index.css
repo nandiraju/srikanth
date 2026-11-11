@@ -212,53 +212,175 @@ footer {
 
 .btn-tooltip {
   position: absolute;
-  bottom: calc(100% + 12px);
+  bottom: calc(100% + 14px);
   left: 50%;
-  transform: translateX(-50%) translateY(6px);
+  transform: translateX(-50%) translateY(8px) scale(0.95);
   width: max-content;
-  max-width: min(90vw, 380px);
-  padding: 0.55rem 1rem;
-  font-family: var(--font-body);
-  font-size: 0.82rem;
-  font-weight: 400;
-  line-height: 1.4;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.92);
-  background: rgba(18, 20, 26, 0.94);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 210, 255, 0.35);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 210, 255, 0.12);
+  max-width: min(92vw, 430px);
+  padding: 2px;
+  border-radius: 14px;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   z-index: 10;
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.75));
+  transition:
+    opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0.25s ease;
 }
 
-.btn-tooltip strong {
-  color: var(--accent-color);
-  font-weight: 700;
-  letter-spacing: 0.5px;
+/* Soft outer ambient gradient halo */
+.btn-tooltip::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #00d2ff, #a855f7, #3a7bd5, #00ffaa, #00d2ff);
+  background-size: 300% 100%;
+  filter: blur(10px);
+  opacity: 0.65;
+  z-index: -2;
+  animation: tooltipGlowShift 3.2s linear infinite;
+  animation-play-state: paused;
 }
 
+/* Glowing pointer caret below tooltip */
 .btn-tooltip::after {
   content: "";
   position: absolute;
-  top: 100%;
+  bottom: -5px;
   left: 50%;
-  transform: translateX(-50%);
-  border-width: 6px;
-  border-style: solid;
-  border-color: rgba(0, 210, 255, 0.35) transparent transparent transparent;
+  width: 11px;
+  height: 11px;
+  transform: translateX(-50%) rotate(45deg);
+  background: #0d1017;
+  border-right: 1.5px solid #00d2ff;
+  border-bottom: 1.5px solid #a855f7;
+  box-shadow: 2px 2px 8px rgba(0, 210, 255, 0.35);
+  z-index: -1;
+}
+
+/* Clipped container for orbiting dual-beam conic gradient border */
+.btn-tooltip-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  z-index: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-tooltip-ring::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%) rotate(0deg);
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    #3a7bd5 35deg,
+    #00d2ff 75deg,
+    #a855f7 115deg,
+    #00f5d4 145deg,
+    transparent 180deg,
+    #3a7bd5 215deg,
+    #00d2ff 255deg,
+    #a855f7 295deg,
+    #00f5d4 325deg,
+    transparent 360deg
+  );
+  animation: tooltipBorderSpin 2.6s linear infinite;
+  animation-play-state: paused;
+}
+
+.btn-tooltip-inner {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.62rem 1.1rem;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #151923 0%, #0b0d13 100%);
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.tooltip-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00d2ff;
+  box-shadow: 0 0 10px #00d2ff, 0 0 20px rgba(0, 210, 255, 0.6);
+  animation: tooltipDotPulse 1.6s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+.passphrase-chip {
+  display: inline-block;
+  margin: 0 2px;
+  padding: 0.1rem 0.48rem;
+  border-radius: 6px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.84rem;
+  letter-spacing: 1.2px;
+  color: #67e8f9;
+  background: linear-gradient(135deg, rgba(0, 210, 255, 0.22), rgba(168, 85, 247, 0.22));
+  border: 1px solid rgba(0, 210, 255, 0.55);
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  text-shadow: 0 0 8px rgba(0, 210, 255, 0.55);
 }
 
 .skeuo-btn-wrapper:hover .btn-tooltip,
 .skeuo-btn-wrapper:focus-within .btn-tooltip {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(0);
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.skeuo-btn-wrapper:hover .btn-tooltip::before,
+.skeuo-btn-wrapper:focus-within .btn-tooltip::before,
+.skeuo-btn-wrapper:hover .btn-tooltip-ring::before,
+.skeuo-btn-wrapper:focus-within .btn-tooltip-ring::before,
+.skeuo-btn-wrapper:hover .tooltip-dot,
+.skeuo-btn-wrapper:focus-within .tooltip-dot {
+  animation-play-state: running;
+}
+
+@keyframes tooltipBorderSpin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes tooltipGlowShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+@keyframes tooltipDotPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.65;
+  }
 }
 
 .skeuo-btn,
@@ -381,5 +503,11 @@ footer a:not(.skeuo-btn):visited:hover {
     opacity: 1 !important;
     transform: none !important;
     will-change: auto;
+  }
+
+  .btn-tooltip::before,
+  .btn-tooltip-ring::before,
+  .tooltip-dot {
+    animation: none !important;
   }
 }

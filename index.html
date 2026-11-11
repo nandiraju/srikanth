@@ -17,7 +17,7 @@
   <link rel="preload" as="image" type="image/webp" href="asset/nsri_frames_mobile/frame_0001.webp" media="(max-width: 768px)" fetchpriority="high">
   <link rel="preload" as="image" type="image/webp" href="asset/nsri_frames/frame_0001.webp" media="(min-width: 769px)" fetchpriority="high">
 
-  <link rel="stylesheet" href="index.css?v=1.1.2">
+  <link rel="stylesheet" href="index.css?v=1.1.3">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Outfit:wght@700&display=swap" rel="stylesheet">
 
   <noscript>
@@ -560,7 +560,11 @@
         <div class="skeuo-btn-wrapper">
           <a href="https://ai.nandiraju.com" target="_blank" rel="noopener" class="skeuo-btn" aria-label="Talk to AI Version of Srikanth" aria-describedby="ai-passphrase-tooltip">Talk to AI Version of Srikanth</a>
           <span id="ai-passphrase-tooltip" class="btn-tooltip" role="tooltip">
-            Use passphrase <strong>'SRI'</strong> to talk to the interactive avatar
+            <span class="btn-tooltip-ring" aria-hidden="true"></span>
+            <span class="btn-tooltip-inner">
+              <span class="tooltip-dot" aria-hidden="true"></span>
+              <span>Use passphrase <strong class="passphrase-chip">'SRI'</strong> to talk to the interactive avatar</span>
+            </span>
           </span>
         </div>
         <div class="footer-content glass">
